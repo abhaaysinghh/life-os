@@ -1,9 +1,12 @@
 
 import streamlit as st
 
+from core.supabase_client import get_supabase_client
+from components.auth_ui import show_auth_screen
+
 # ==========================================
-# LIFE OS - APPLICATION FOUNDATION
-# Version 0.1
+# LIFE OS - AUTHENTICATED APPLICATION
+# Version 0.2
 # ==========================================
 
 st.set_page_config(
@@ -14,12 +17,11 @@ st.set_page_config(
 )
 
 # ------------------------------------------
-# CUSTOM DESIGN SYSTEM
+# DESIGN SYSTEM
 # ------------------------------------------
 
 st.markdown("""
 <style>
-
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 .stApp {
@@ -68,11 +70,7 @@ h1, h2, h3 {
 }
 
 .os-card {
-    background: linear-gradient(
-        145deg,
-        #141F32,
-        #101827
-    );
+    background: linear-gradient(145deg, #141F32, #101827);
     border: 1px solid #26344B;
     border-radius: 14px;
     padding: 22px;
@@ -98,10 +96,6 @@ h1, h2, h3 {
     color: #71819B;
     font-size: 12px;
     margin-top: 8px;
-}
-
-.os-accent {
-    color: #8B9FFF;
 }
 
 .os-divider {
@@ -130,10 +124,28 @@ h1, h2, h3 {
     border-color: #8298FF;
     color: white;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
+
+# ------------------------------------------
+# AUTHENTICATION
+# ------------------------------------------
+
+try:
+    supabase = get_supabase_client()
+except Exception:
+    st.error(
+        "Unable to connect to Supabase. "
+        "Check your application secrets."
+    )
+    st.stop()
+
+if "user" not in st.session_state:
+    show_auth_screen(supabase)
+    st.stop()
+
+user = st.session_state.user
 
 # ------------------------------------------
 # SIDEBAR
@@ -151,8 +163,31 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-    st.markdown('<div class="os-divider"></div>',
-                unsafe_allow_html=True)
+    st.markdown(
+        '<div class="os-divider"></div>',
+        unsafe_allow_html=True
+    )
+
+    metadata = getattr(user, "user_metadata", {}) or {}
+    full_name = metadata.get("full_name", "LIFE OS User")
+
+    st.caption("SIGNED IN AS")
+    st.write(full_name)
+    st.caption(getattr(user, "email", ""))
+
+    if st.button("Logout", use_container_width=True):
+
+        try:
+            supabase.auth.sign_out()
+        finally:
+            st.session_state.pop("user", None)
+            st.session_state.pop("session", None)
+            st.rerun()
+
+    st.markdown(
+        '<div class="os-divider"></div>',
+        unsafe_allow_html=True
+    )
 
     st.caption("WORKSPACE")
 
@@ -170,18 +205,19 @@ with st.sidebar:
         label_visibility="collapsed"
     )
 
-    st.markdown('<div class="os-divider"></div>',
-                unsafe_allow_html=True)
+    st.markdown(
+        '<div class="os-divider"></div>',
+        unsafe_allow_html=True
+    )
 
     st.caption("SYSTEM")
 
     st.markdown(
-        '<span class="os-tag">DEVELOPMENT MODE</span>',
+        '<span class="os-tag">AUTHENTICATED</span>',
         unsafe_allow_html=True
     )
 
-    st.markdown("")
-    st.caption("LIFE OS · Version 0.1")
+    st.caption("LIFE OS · Version 0.2")
 
 
 # ------------------------------------------
@@ -202,23 +238,20 @@ if selected_page == "Command Center":
         "projects and personal progress."
     )
 
-    st.markdown('<div class="os-divider"></div>',
-                unsafe_allow_html=True)
+    st.markdown(
+        '<div class="os-divider"></div>',
+        unsafe_allow_html=True
+    )
 
     st.markdown("### Your Intelligence Overview")
-
-    st.info(
-        "Your personal workspace is being configured. "
-        "Connect your LIFE OS account in the next development step."
-    )
 
     col1, col2, col3, col4 = st.columns(4)
 
     cards = [
-        (col1, "ACTIVE GOALS", "—", "Awaiting account connection"),
-        (col2, "SKILLS TRACKED", "—", "Awaiting account connection"),
-        (col3, "ACTIVE PROJECTS", "—", "Awaiting account connection"),
-        (col4, "DECISIONS LOGGED", "—", "Awaiting account connection")
+        (col1, "ACTIVE GOALS", "—", "Database integration pending"),
+        (col2, "SKILLS TRACKED", "—", "Database integration pending"),
+        (col3, "ACTIVE PROJECTS", "—", "Database integration pending"),
+        (col4, "DECISIONS LOGGED", "—", "Database integration pending")
     ]
 
     for column, title, value, note in cards:
@@ -262,13 +295,13 @@ if selected_page == "Command Center":
     st.markdown("### System Status")
 
     st.markdown(
-        '<span class="os-tag">INTERFACE INITIALIZED</span>',
+        '<span class="os-tag">AUTHENTICATION ACTIVE</span>',
         unsafe_allow_html=True
     )
 
     st.caption(
-        "Database integration, authentication and live analytics "
-        "will be connected in subsequent development steps."
+        "Your LIFE OS account is connected. "
+        "Live analytics will be implemented next."
     )
 
 
@@ -300,12 +333,12 @@ else:
             "Explore your personal performance through interactive analytics."
     }
 
-    st.markdown(
-        module_descriptions.get(selected_page, "")
-    )
+    st.markdown(module_descriptions.get(selected_page, ""))
 
-    st.markdown('<div class="os-divider"></div>',
-                unsafe_allow_html=True)
+    st.markdown(
+        '<div class="os-divider"></div>',
+        unsafe_allow_html=True
+    )
 
     st.info(
         "This module is part of the LIFE OS development roadmap. "
@@ -317,8 +350,10 @@ else:
 # FOOTER
 # ------------------------------------------
 
-st.markdown('<div class="os-divider"></div>',
-            unsafe_allow_html=True)
+st.markdown(
+    '<div class="os-divider"></div>',
+    unsafe_allow_html=True
+)
 
 st.caption(
     "LIFE OS | Personal Decision Intelligence System | "
